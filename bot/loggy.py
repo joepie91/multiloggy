@@ -138,9 +138,8 @@ class Loggy(Bot):
                      "Source: http://inamidst.com/code/loggy.py " + 
                      "Logging to: " + self.loguri), channel[1:])
 
-   def logjoin(self, origin, command, channel, args, text): 
-      fargs = (origin.nick, origin.user, origin.host, channel)
-      self.log('*** %s (%s@%s) has joined %s' % fargs, channel)
+   def logjoin(self, origin, command, channel, args, text):
+      self.log('*** %s (%s@%s) has joined %s' % (origin.nick, origin.user, origin.host, channel), channel)
       self.userlist[channel].append(origin.nick)
 
    def logpart(self, origin, command, channel, args, text): 
