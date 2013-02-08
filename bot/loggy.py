@@ -187,6 +187,11 @@ class Loggy(Bot):
       # users = ' '.join(sorted(users.split(' ')))
       channel = args[3]
       self.log('<%s> Users on %s: %s' % (origin.nick, channel, users), channel)
+      
+      for user in users.split(' '):
+         if user[:1] in "~&@%+":
+            user = user[1:]
+         self.userlist[channel].append(user)
 
    def dispatch(self, origin, args, text): 
       if len(args) >= 2: 
