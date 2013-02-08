@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 """
 loggy.py - An IRC Logger
-Author: Sean B. Palmer, inamidst.com
-Source: http://inamidst.com/code/loggy.py
-Cf. http://paste.lisp.org/display/28974
+Original author: Sean B. Palmer, inamidst.com
+Original source: http://inamidst.com/code/loggy.py
+
+Kick/mode patch: David P. Kendal
+Multi-channel support: Sven Slootweg, cryto.net/~joepie91
 """
 
 import sys, re, os
@@ -135,7 +137,7 @@ class Loggy(Bot):
             elif request in ('help', 'about'): 
                self.msg(origin.sender, 
                     ("I'm a Python IRC logging bot. " + 
-                     "Source: http://inamidst.com/code/loggy.py " + 
+                     "Source: http://github.com/joepie91/multiloggy " +
                      "Logging to: " + self.loguri), channel[1:])
 
    def logjoin(self, origin, command, channel, args, text):
@@ -279,6 +281,11 @@ def main():
       
    bot.loguri = sys.argv[4]
    bot.run(host)
+
+'''
+"Applejack is best pony" 
+  -sbp
+'''
 
 if __name__=="__main__": 
    main()
