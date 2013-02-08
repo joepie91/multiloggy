@@ -138,6 +138,12 @@ class Loggy(Bot):
       msg = '*** %s has parted %s (%s)'
       self.log(msg % (origin.nick, self.channel, message))
 
+   def logkick(self, origin, command, channel, args, text):
+      reason = ''
+      if text:
+        reason = ' (%s)' % text
+      self.log('*** %s kicked %s from %s%s' % (origin.nick, args[2],  self.channel, reason))
+
    def logquit(self, origin, command, channel, args, text): 
       message = text
       self.log('*** %s has quit (%s)' % (origin.nick, message))
@@ -146,6 +152,10 @@ class Loggy(Bot):
       old = origin.nick
       new = text
       self.log('*** %s is now known as %s' % (old, new))
+
+   def logmodechange(self, origin, command, channel, args, text):
+      if origin.nick == self.nick: return
+      self.log('*** %s sets mode %s' % (origin.nick, ' '.join(args[2:])))
 
    def logsettopic(self, origin, command, channel, args, text): 
       if args[1] == self.channel: 
@@ -175,7 +185,9 @@ class Loggy(Bot):
          'JOIN': self.logjoin, 
          'PART': self.logpart, 
          'QUIT': self.logquit, 
+         'KICK': self.logkick, 
          'NICK': self.lognick, 
+         'MODE': self.logmodechange, 
          'TOPIC': self.logsettopic, 
          '332': self.logtopic, 
          '353': self.logusers
