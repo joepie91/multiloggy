@@ -140,20 +140,20 @@ class Loggy(Bot):
 
    def logjoin(self, origin, command, channel, args, text):
       self.log('*** %s (%s@%s) has joined %s' % (origin.nick, origin.user, origin.host, channel), channel)
-      self.userlist[channel].append(origin.nick)
+      self.adduser(channel, origin.nick)
 
    def logpart(self, origin, command, channel, args, text): 
       message = text
       msg = '*** %s has parted %s (%s)'
       self.log(msg % (origin.nick, channel, message or ''), channel) 
-      self.userlist[channel].remove(origin.nick)
+      self.removeuser(channel, origin.nick)
 
    def logkick(self, origin, command, channel, args, text):
       reason = ''
       if text:
         reason = ' (%s)' % text
       self.log('*** %s kicked %s from %s%s' % (origin.nick, args[2],  channel, reason), channel)
-      self.userlist[channel].remove(origin.nick)
+      self.removeuser(channel, origin.nick)
 
    def logquit(self, origin, command, channel, args, text): 
       message = text
@@ -161,7 +161,7 @@ class Loggy(Bot):
       for channel in self.channels:
          if origin.nick in self.userlist[channel]:
             self.log('*** %s has quit (%s)' % (origin.nick, message), channel)
-            self.userlist[channel].remove(origin.nick)
+            self.removeuser(channel, origin.nick)
 
    def lognick(self, origin, command, channel, args, text): 
       old = origin.nick
@@ -191,7 +191,7 @@ class Loggy(Bot):
       for user in users.split(' '):
          if user[:1] in "~&@%+":
             user = user[1:]
-         self.userlist[channel].append(user)
+         self.adduser(channel, user)
 
    def dispatch(self, origin, args, text): 
       if len(args) >= 2: 
@@ -241,6 +241,15 @@ class Loggy(Bot):
    def now(self, format): 
       offset = 0 # 131412
       return time.strftime(format, time.gmtime(time.time() + offset))
+      
+   def adduser(self, channel, nick):
+      self.userlist[channel].append(nick)
+      
+   def removeuser(self, channel, nick):
+      try:
+         self.userlist[channel].remove(nick)
+      except ValueError, e:
+         pass
 
 def main(): 
    usage = '%prog <nick> irc://<host>/<channel> <logdir> <loguri>'
