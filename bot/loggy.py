@@ -146,9 +146,8 @@ class Loggy(Bot):
    def logpart(self, origin, command, channel, args, text): 
       message = text
       msg = '*** %s has parted %s (%s)'
-      self.log(msg % (origin.nick, channel, message), channel) 
+      self.log(msg % (origin.nick, channel, message or ''), channel) 
       self.userlist[channel].remove(origin.nick)
-      # TODO: Part reasons appear not to be recognized?
 
    def logkick(self, origin, command, channel, args, text):
       reason = ''
