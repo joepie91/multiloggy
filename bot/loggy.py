@@ -252,7 +252,7 @@ class Loggy(Bot):
          pass
 
 def main(): 
-   usage = '%prog <nick> irc://<host>/<channel> <logdir> <loguri>'
+   usage = '%prog <nick> irc://<host>/<channel>[,<channel>...] <logdir> <loguri>'
    if len(sys.argv) != 5: 
       print 'Usage: ' + usage.replace('%prog', sys.argv[0])
       sys.exit()
