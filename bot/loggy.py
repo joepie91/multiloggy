@@ -6,7 +6,7 @@ Source: http://inamidst.com/code/loggy.py
 Cf. http://paste.lisp.org/display/28974
 """
 
-import sys, re
+import sys, re, os
 import socket, asyncore, asynchat
 
 class Origin(object): 
@@ -96,19 +96,23 @@ class Bot(asynchat.async_chat):
 import os, time
 
 class Loggy(Bot): 
-   def __init__(self, nick, channel): 
-      Bot.__init__(self, nick, [channel])
-      self.channel = channel
+   def __init__(self, nick, channels): 
+      Bot.__init__(self, nick, channels)
+      self.channels = channels
       self.offlog = '[off]'
+      
+      self.userlist = {}
+      for channel in channels:
+         self.userlist[channel] = []
 
    def logprivmsg(self, origin, command, channel, args, text): 
-      if channel == self.channel: 
+      if channel in self.channels: 
          if text.startswith('\x01ACTION ') and text.endswith('\x01'): 
             text = text[8:-1]
             if not text.startswith(self.offlog): 
-               timestamp = self.log('* %s %s' % (origin.nick, text))
+               timestamp = self.log('* %s %s' % (origin.nick, text), channel)
          elif not text.startswith(self.offlog): 
-            timestamp = self.log('<%s> %s' % (origin.nick, text))
+            timestamp = self.log('<%s> %s' % (origin.nick, text), channel)
 
          if (text.startswith(self.nick + ': ') or 
              text.startswith(self.nick + ', ')): 
@@ -116,62 +120,75 @@ class Loggy(Bot):
 
             if request in ('pointer', 'bookmark', 'uri'): 
                day = self.now('%Y-%m-%d')
-               uri = self.loguri + day + '#T' + timestamp.replace(':', '-')
-               self.msg(origin.sender, uri)
+               
+               if len(self.channels) > 1:
+                  uri = self.loguri + channel[1:] + '/' + day + '#T' + timestamp.replace(':', '-')
+               else:
+                  uri = self.loguri + day + '#T' + timestamp.replace(':', '-')
+               
+               self.msg(origin.sender, uri, channel)
 
             elif request in ('ping', 'boing'): 
                reply = {'ping': 'pong', 'boing': 'boing!'}[request]
-               self.msg(origin.sender, '%s: %s' % (origin.nick, reply))
+               self.msg(origin.sender, '%s: %s' % (origin.nick, reply), channel)
 
             elif request in ('help', 'about'): 
                self.msg(origin.sender, 
                     ("I'm a Python IRC logging bot. " + 
                      "Source: http://inamidst.com/code/loggy.py " + 
-                     "Logging to: " + self.loguri))
+                     "Logging to: " + self.loguri), channel[1:])
 
    def logjoin(self, origin, command, channel, args, text): 
-      fargs = (origin.nick, origin.user, origin.host, self.channel)
-      self.log('*** %s (%s@%s) has joined %s' % fargs)
+      fargs = (origin.nick, origin.user, origin.host, channel)
+      self.log('*** %s (%s@%s) has joined %s' % fargs, channel)
+      self.userlist[channel].append(origin.nick)
 
    def logpart(self, origin, command, channel, args, text): 
       message = text
       msg = '*** %s has parted %s (%s)'
-      self.log(msg % (origin.nick, self.channel, message))
+      self.log(msg % (origin.nick, channel, message), channel) 
+      self.userlist[channel].remove(origin.nick)
+      # TODO: Part reasons appear not to be recognized?
 
    def logkick(self, origin, command, channel, args, text):
       reason = ''
       if text:
         reason = ' (%s)' % text
-      self.log('*** %s kicked %s from %s%s' % (origin.nick, args[2],  self.channel, reason))
+      self.log('*** %s kicked %s from %s%s' % (origin.nick, args[2],  channel, reason), channel)
+      self.userlist[channel].remove(origin.nick)
 
    def logquit(self, origin, command, channel, args, text): 
       message = text
-      self.log('*** %s has quit (%s)' % (origin.nick, message))
+      
+      for channel in self.channels:
+         if origin.nick in self.userlist[channel]:
+            self.log('*** %s has quit (%s)' % (origin.nick, message), channel)
+            self.userlist[channel].remove(origin.nick)
 
    def lognick(self, origin, command, channel, args, text): 
       old = origin.nick
       new = text
-      self.log('*** %s is now known as %s' % (old, new))
+      self.log('*** %s is now known as %s' % (old, new), channel)
 
    def logmodechange(self, origin, command, channel, args, text):
       if origin.nick == self.nick: return
-      self.log('*** %s sets mode %s' % (origin.nick, ' '.join(args[2:])))
+      self.log('*** %s sets mode %s' % (origin.nick, ' '.join(args[2:])), channel)
 
    def logsettopic(self, origin, command, channel, args, text): 
-      if args[1] == self.channel: 
+      if args[1] in self.channels: 
          topic = text
-         self.log('*** %s changed the topic to: "%s"' % (origin.nick, topic))
+         self.log('*** %s changed the topic to: "%s"' % (origin.nick, topic), channel)
 
    def logtopic(self, origin, command, channel, args, text):
       topic = text
       channel = args[2]
-      self.log('<%s> Topic for %s is: %s' % (origin.nick, channel, topic))
+      self.log('<%s> Topic for %s is: %s' % (origin.nick, channel, topic), channel)
 
    def logusers(self, origin, command, channel, args, text): 
       users = text.strip(' ')
       # users = ' '.join(sorted(users.split(' ')))
       channel = args[3]
-      self.log('<%s> Users on %s: %s' % (origin.nick, channel, users))
+      self.log('<%s> Users on %s: %s' % (origin.nick, channel, users), channel)
 
    def dispatch(self, origin, args, text): 
       if len(args) >= 2: 
@@ -196,13 +213,17 @@ class Loggy(Bot):
       if commands.has_key(command): 
          commands[command](origin, command, channel, args, text)
 
-   def msg(self, recipient, text): 
+   def msg(self, recipient, text, channel): 
       text = Bot.msg(self, recipient, text)
-      self.log('<%s> %s' % (self.nick, text))
+      self.log('<%s> %s' % (self.nick, text), channel)
 
-   def log(self, line): 
+   def log(self, line, channel): 
       name = self.now('%Y-%m-%d.txt')
-      logfile = os.path.join(self.logdir, name)
+      
+      if len(self.channels) > 1:
+         logfile = os.path.join(self.logdir, channel[1:], name)
+      else:
+         logfile = os.path.join(self.logdir, name)
 
       try: 
          f = open(logfile, 'a')
@@ -225,12 +246,25 @@ def main():
       sys.exit()
 
    uri = sys.argv[2]
-   scheme, _, host, channel = tuple(uri.split('/'))
-
-   bot = Loggy(sys.argv[1], '#' + channel)
+   scheme, _, host, channellist = tuple(uri.split('/'))
+   channels = ['#' + channel for channel in channellist.split(',')]
+   
+   bot = Loggy(sys.argv[1], channels)
    bot.logdir = sys.argv[3]
    if not os.path.isdir(bot.logdir): 
       raise Exception("Not a directory: " + bot.logdir)
+      
+   # If there's more than one channel that we're logging, we'll need
+   #   subdirectories for the various channels. If this fails, we'll
+   #   assume that the subdirectories already exist and ignore it.
+   
+   if len(channels) > 1:
+      for channel in channels:
+         try:
+            os.mkdir(os.path.join(bot.logdir, channel[1:]))
+         except OSError, e:
+            pass
+      
    bot.loguri = sys.argv[4]
    bot.run(host)
 
