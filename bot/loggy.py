@@ -169,7 +169,10 @@ class Loggy(Bot):
    def lognick(self, origin, command, channel, args, text): 
       old = origin.nick
       new = text
-      self.log('*** %s is now known as %s' % (old, new), channel)
+
+      for channel in self.channels:
+         if old in self.userlist[channel]:
+            self.log('*** %s is now known as %s' % (old, new), channel)
 
    def logmodechange(self, origin, command, channel, args, text):
       if origin.nick == self.nick: return
