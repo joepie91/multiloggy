@@ -99,8 +99,8 @@ class Bot(asynchat.async_chat):
 import os, time
 
 class Loggy(Bot): 
-   def __init__(self, nick, channels): 
-      Bot.__init__(self, nick, channels)
+   def __init__(self, nick, channels, passwords): 
+      Bot.__init__(self, nick, channels, passwords)
       self.channels = channels
       self.offlog = '[off]'
       
