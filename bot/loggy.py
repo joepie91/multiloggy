@@ -28,7 +28,7 @@ class Origin(object):
 class Bot(asynchat.async_chat): 
    line = re.compile(r'(?::([^ ]+) +)?((?:.(?! :))+.)(?: +:?(.*))?')
 
-   def __init__(self, nick, channels=None): 
+   def __init__(self, nick, channels=None, passwords=None): 
       asynchat.async_chat.__init__(self)
       self.set_terminator('\r\n')
       self.buffer = []
@@ -39,6 +39,7 @@ class Bot(asynchat.async_chat):
 
       self.verbose = True
       self.channels = channels or []
+      self.passwords = passwords or []
 
    def run(self, host, port=6667): 
       if self.verbose: 
@@ -73,8 +74,8 @@ class Bot(asynchat.async_chat):
       if args and (args[0] == 'PING'): 
          self.write(('PONG', text))
       elif args and (args[0] == '251'): 
-         for channel in self.channels: 
-            self.write(('JOIN', channel))
+         for ctr in range(0, len(self.channels)):
+            self.write(('JOIN', self.channels[ctr], self.passwords[ctr]))
 
       origin = Origin(self, source, args)
       self.dispatch(origin, args, text)
@@ -261,7 +262,15 @@ def main():
 
    uri = sys.argv[2]
    scheme, _, host, channellist = tuple(uri.split('/'))
-   channels = ['#' + channel for channel in channellist.split(',')]
+   channels = []
+   passwords = []
+   for channel in channellist.split(','):
+      if '+' in channel:
+         channels.append('#' + channel.split('+')[0])
+         passwords.append(channel.split('+')[1])
+      else:
+         channels.append('#' + channel)
+         passwords.append('')
    
    bot = Loggy(sys.argv[1], channels)
    bot.logdir = sys.argv[3]
