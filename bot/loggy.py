@@ -272,7 +272,7 @@ def main():
          channels.append('#' + channel)
          passwords.append('')
    
-   bot = Loggy(sys.argv[1], channels)
+   bot = Loggy(sys.argv[1], channels, passwords)
    bot.logdir = sys.argv[3]
    if not os.path.isdir(bot.logdir): 
       raise Exception("Not a directory: " + bot.logdir)
