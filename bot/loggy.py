@@ -28,7 +28,7 @@ class Origin(object):
 class Bot(asynchat.async_chat): 
    line = re.compile(r'(?::([^ ]+) +)?((?:.(?! :))+.)(?: +:?(.*))?')
 
-   def __init__(self, nick, channels=None): 
+   def __init__(self, nick, channels=None, passwords=None): 
       asynchat.async_chat.__init__(self)
       self.set_terminator('\r\n')
       self.buffer = []
@@ -39,6 +39,7 @@ class Bot(asynchat.async_chat):
 
       self.verbose = True
       self.channels = channels or []
+      self.passwords = passwords or []
 
    def run(self, host, port=6667): 
       if self.verbose: 
@@ -73,8 +74,8 @@ class Bot(asynchat.async_chat):
       if args and (args[0] == 'PING'): 
          self.write(('PONG', text))
       elif args and (args[0] == '251'): 
-         for channel in self.channels: 
-            self.write(('JOIN', channel))
+         for ctr in range(0, len(self.channels)):
+            self.write(('JOIN', self.channels[ctr], self.passwords[ctr]))
 
       origin = Origin(self, source, args)
       self.dispatch(origin, args, text)
@@ -98,8 +99,8 @@ class Bot(asynchat.async_chat):
 import os, time
 
 class Loggy(Bot): 
-   def __init__(self, nick, channels): 
-      Bot.__init__(self, nick, channels)
+   def __init__(self, nick, channels, passwords): 
+      Bot.__init__(self, nick, channels, passwords)
       self.channels = channels
       self.offlog = '[off]'
       
@@ -168,7 +169,10 @@ class Loggy(Bot):
    def lognick(self, origin, command, channel, args, text): 
       old = origin.nick
       new = text
-      self.log('*** %s is now known as %s' % (old, new), channel)
+
+      for channel in self.channels:
+         if old in self.userlist[channel]:
+            self.log('*** %s is now known as %s' % (old, new), channel)
 
    def logmodechange(self, origin, command, channel, args, text):
       if origin.nick == self.nick: return
@@ -261,9 +265,17 @@ def main():
 
    uri = sys.argv[2]
    scheme, _, host, channellist = tuple(uri.split('/'))
-   channels = ['#' + channel for channel in channellist.split(',')]
+   channels = []
+   passwords = []
+   for channel in channellist.split(','):
+      if '+' in channel:
+         channels.append('#' + channel.split('+')[0])
+         passwords.append(channel.split('+')[1])
+      else:
+         channels.append('#' + channel)
+         passwords.append('')
    
-   bot = Loggy(sys.argv[1], channels)
+   bot = Loggy(sys.argv[1], channels, passwords)
    bot.logdir = sys.argv[3]
    if not os.path.isdir(bot.logdir): 
       raise Exception("Not a directory: " + bot.logdir)
