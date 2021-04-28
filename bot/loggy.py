@@ -4,7 +4,7 @@ loggy.py - An IRC Logger
 Original author: Sean B. Palmer, inamidst.com
 Original source: http://inamidst.com/code/loggy.py
 
-Kick/mode patch: David P. Kendal
+Kick/mode patch: Daphne Preston-Kendal
 Multi-channel support: Sven Slootweg, cryto.net/~joepie91
 """
 

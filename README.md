@@ -7,4 +7,4 @@ Original author: [Sean B. Palmer, inamidst.com](http://inamidst.com/)
 
 Original source: [http://inamidst.com/code/loggy.py](http://inamidst.com/code/loggy.py)
 
-Kick/mode logging patch contributed by David P. Kendal.
+Kick/mode logging patch contributed by Daphne Preston-Kendal.
